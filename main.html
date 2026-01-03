@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Note Tool</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <div class="brand">
+          <div class="brand-logo">VNT</div>
+          <div class="brand-text">
+            <h1>Voice Note Tool</h1>
+            <p>Record and manage voice notes for jobs.</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span class="username-display" id="usernameDisplay"></span>
+          <button class="header-btn" id="logoutBtn">Logout</button>
+        </div>
+      </header>
+
+      <main class="app-main app-main--home">
+        <section class="intro">
+          <h2>Voice Note Entry</h2>
+          <p>Enter a job number to record voice notes.</p>
+        </section>
+
+        <!-- Job search -->
+        <section class="panel">
+          <form class="job-search" id="jobSearchForm">
+            <div class="field field--inline">
+              <label for="jobNumber">Job Number</label>
+              <div style="position: relative; display: inline-block; width: 100%;">
+                <input
+                  id="jobNumber"
+                  name="jobNumber"
+                  type="text"
+                  placeholder="Enter job number (4+ digits)"
+                  required
+                  autocomplete="off"
+                />
+                <div id="jobNumberDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(129, 140, 248, 0.5); border-radius: 0 0 10px 10px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 20px rgba(0,0,0,0.4);">
+                  <!-- Dropdown items will be inserted here -->
+                </div>
+              </div>
+            </div>
+            <button class="primary-btn" type="submit" id="searchBtn">Search</button>
+          </form>
+          <p class="inline-warning" id="jobSearchError" style="display: none;"></p>
+        </section>
+
+        <!-- Section 1: Job details -->
+        <section class="panel panel--collapsible" id="jobDetailsSection" style="display: none;">
+          <header class="panel-header">
+            <h3>Job Details</h3>
+          </header>
+          <div class="panel-body job-details-grid">
+            <div class="field">
+              <label for="clientName">Client Name</label>
+              <input id="clientName" name="clientName" type="text" readonly />
+            </div>
+            <div class="field">
+              <label for="jobName">Job Name</label>
+              <input id="jobName" name="jobName" type="text" readonly />
+            </div>
+            <div class="field">
+              <label for="orderQuantity">Order Quantity</label>
+              <input id="orderQuantity" name="orderQuantity" type="number" readonly />
+            </div>
+            <div class="field">
+              <label for="poDate">PO Date</label>
+              <input id="poDate" name="poDate" type="text" readonly />
+            </div>
+            <div class="field">
+              <label for="toDepartment">To Department</label>
+              <select id="toDepartment" name="toDepartment" required>
+                <option value="">Select Department</option>
+                <option value="prepress">Prepress</option>
+                <option value="postpress">Postpress</option>
+                <option value="printing">Printing</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: Voice Note Entry -->
+        <section class="panel panel--collapsible" id="voiceNoteSection" style="display: none;">
+          <header class="panel-header">
+            <h3>Voice Note</h3>
+          </header>
+          <div class="panel-body">
+            <!-- Audio Recording Section -->
+            <div class="field">
+              <label>Audio Recording</label>
+              <div class="audio-recording-container">
+                <div class="audio-controls">
+                  <button class="audio-btn record-btn" type="button" id="recordBtn">
+                    <span class="btn-icon">🎤</span>
+                    <span>Record Audio</span>
+                  </button>
+                  <button class="audio-btn stop-btn" type="button" id="stopBtn" style="display: none;">
+                    <span class="btn-icon">⏹️</span>
+                    <span>Stop Recording</span>
+                  </button>
+                </div>
+                
+                <div class="audio-playback" id="audioPlayback" style="display: none;">
+                  <audio id="audioPlayer" controls style="width: 100%; margin-bottom: 10px;"></audio>
+                  <div class="audio-actions">
+                    <button class="audio-btn play-btn" type="button" id="playBtn">
+                      <span class="btn-icon">▶️</span>
+                      <span>Play</span>
+                    </button>
+                    <button class="audio-btn pause-btn" type="button" id="pauseBtn" style="display: none;">
+                      <span class="btn-icon">⏸️</span>
+                      <span>Pause</span>
+                    </button>
+                    <button class="audio-btn delete-btn" type="button" id="deleteBtn">
+                      <span class="btn-icon">🗑️</span>
+                      <span>Delete</span>
+                    </button>
+                    <button class="audio-btn save-btn primary-btn" type="button" id="saveAudioBtn">
+                      <span class="btn-icon">💾</span>
+                      <span>Save</span>
+                    </button>
+                  </div>
+                  <div class="recording-status" id="recordingStatus"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="field">
+              <button class="primary-btn" type="button" id="saveVoiceNoteBtn">Save Voice Note</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>Voice Note Tool</span>
+        <span class="divider">•</span>
+        <span>Job Details</span>
+      </footer>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
