@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div id="loading-indicator">Loading...</div>
     <div class="app">
       <header class="app-header">
         <div class="brand">
@@ -62,6 +63,44 @@
       </footer>
     </div>
 
+    <script>
+      // Check for module support and show error early if not supported
+      if (!HTMLScriptElement.supports || !HTMLScriptElement.supports('module')) {
+        // Check if browser supports modules
+        const testScript = document.createElement('script');
+        testScript.type = 'module';
+        if (!testScript.type || testScript.type !== 'module') {
+          document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: white;"><h2>Browser Not Supported</h2><p>Please use a modern browser:</p><ul style="text-align: left; display: inline-block;"><li>Chrome (latest)</li><li>Firefox (latest)</li><li>Safari (latest)</li><li>Edge (latest)</li></ul></div>';
+        }
+      }
+    </script>
     <script type="module" src="script.js"></script>
+    <script>
+      // Hide loading indicator after page loads
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('loading-indicator');
+          if (loader) loader.classList.add('hidden');
+        }, 500);
+      });
+      
+      // Check if script loaded after 3 seconds
+      setTimeout(() => {
+        const loader = document.getElementById('loading-indicator');
+        if (loader && !loader.classList.contains('hidden')) {
+          loader.innerHTML = '<div style="text-align: center; padding: 20px;"><h2 style="color: #ef4444;">Loading Timeout</h2><p>The page is taking too long to load.</p><p style="font-size: 14px; margin-top: 20px;">Possible issues:</p><ul style="text-align: left; display: inline-block; color: #a5b4fc;"><li>Check internet connection</li><li>Try refreshing the page</li><li>Clear browser cache</li><li>Use Chrome or Firefox browser</li></ul><button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer;">Refresh Page</button></div>';
+        }
+      }, 3000);
+    </script>
+    <script nomodule>
+      // Fallback for browsers that don't support ES6 modules
+      document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: white; background: #1e293b; min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column;"><h2 style="color: #ef4444;">Browser Not Supported</h2><p>This application requires a modern browser that supports ES6 modules.</p><p>Please update your browser or use:</p><ul style="text-align: left; display: inline-block; color: #a5b4fc;"><li>Chrome (latest version)</li><li>Firefox (latest version)</li><li>Safari (iOS 11+ or latest)</li><li>Edge (latest version)</li></ul></div>';
+    </script>
+    <noscript>
+      <div style="position: fixed; top: 0; left: 0; right: 0; background: #ef4444; color: white; padding: 20px; z-index: 10000; text-align: center;">
+        <h3>JavaScript Required</h3>
+        <p>Please enable JavaScript to use this application.</p>
+      </div>
+    </noscript>
   </body>
 </html>

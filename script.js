@@ -1,5 +1,40 @@
 import { authAPI, jobsAPI, voiceNotesAPI, voiceNoteToolAPI } from './api.js';
 
+// Hide loading indicator when script loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', hideLoader);
+} else {
+  hideLoader();
+}
+
+function hideLoader() {
+  const loader = document.getElementById('loading-indicator');
+  if (loader) {
+    setTimeout(() => {
+      loader.classList.add('hidden');
+    }, 300);
+  }
+}
+
+// Global error handler for module loading issues
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event);
+  if (event.message && (event.message.includes('Failed to fetch dynamically imported module') || 
+      event.message.includes('Cannot find module') ||
+      event.message.includes('Unexpected token'))) {
+    showError('Failed to load application files. Please refresh the page or check your internet connection.');
+  }
+}, true);
+
+// Function to show error message
+function showError(message) {
+  const loader = document.getElementById('loading-indicator');
+  if (loader) {
+    loader.innerHTML = `<div style="text-align: center; padding: 20px;"><h2 style="color: #ef4444;">⚠️ Error</h2><p>${message}</p><button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer;">Refresh Page</button></div>`;
+    loader.classList.remove('hidden');
+  }
+}
+
 // Check if user is on login page or main page
 const pathname = window.location.pathname;
 const filename = pathname.split('/').pop();
