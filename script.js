@@ -1,4 +1,4 @@
-import { authAPI, jobsAPI, voiceNotesAPI } from './api.js';
+import { authAPI, jobsAPI, voiceNotesAPI, voiceNoteToolAPI } from './api.js';
 
 // Check if user is on login page or main page
 const pathname = window.location.pathname;
@@ -153,7 +153,7 @@ if (!isLoginPage) {
     }
   });
 
-  // Function to fetch job details
+  // Function to fetch job details and audio files
   async function fetchJobDetails(jobNumber) {
     try {
       const jobDetails = await jobsAPI.getJobDetails(jobNumber);
@@ -168,6 +168,9 @@ if (!isLoginPage) {
       document.getElementById('jobDetailsSection').style.display = 'block';
       document.getElementById('voiceNoteSection').style.display = 'block';
       
+      // Fetch existing audio files for this job
+      await fetchExistingAudioFiles(jobNumber);
+      
     } catch (error) {
       console.error('Error fetching job details:', error);
       // Fallback to default values if error
@@ -177,6 +180,116 @@ if (!isLoginPage) {
       document.getElementById('poDate').value = '';
       
       jobSearchError.textContent = error.message || 'Failed to fetch job details.';
+      jobSearchError.className = 'inline-warning';
+      jobSearchError.style.display = 'block';
+    }
+  }
+
+  // Function to fetch existing audio files
+  async function fetchExistingAudioFiles(jobNumber) {
+    try {
+      const audioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber);
+      const existingAudioList = document.getElementById('existingAudioList');
+      const existingAudioSection = document.getElementById('existingAudioSection');
+      
+      if (audioFiles && audioFiles.length > 0) {
+        existingAudioList.innerHTML = '';
+        
+        audioFiles.forEach((audioFile, index) => {
+          const audioItem = document.createElement('div');
+          audioItem.className = 'existing-audio-item';
+          audioItem.innerHTML = `
+            <div class="audio-item-header">
+              <div class="audio-item-info">
+                <span class="audio-item-number">#${index + 1}</span>
+                <span class="audio-item-dept">${audioFile.toDepartment}</span>
+                <span class="audio-item-date">${new Date(audioFile.createdAt).toLocaleString()}</span>
+                <span class="audio-item-creator">by ${audioFile.createdBy}</span>
+              </div>
+              <button class="audio-item-play-btn" data-audio-id="${audioFile._id}">
+                <span class="btn-icon">▶️</span>
+                <span>Play</span>
+              </button>
+            </div>
+            <audio class="existing-audio-player" id="existingAudio_${audioFile._id}" style="display: none; width: 100%; margin-top: 10px;"></audio>
+          `;
+          existingAudioList.appendChild(audioItem);
+        });
+        
+        existingAudioSection.style.display = 'block';
+        
+        // Add event listeners for play buttons
+        existingAudioList.querySelectorAll('.audio-item-play-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const audioId = btn.getAttribute('data-audio-id');
+            await playExistingAudio(audioId, btn);
+          });
+        });
+      } else {
+        existingAudioList.innerHTML = '<p class="no-audio-message">No audio files found for this job.</p>';
+        existingAudioSection.style.display = 'block';
+      }
+    } catch (error) {
+      console.error('Error fetching existing audio files:', error);
+      // Don't show error, just hide the section
+      document.getElementById('existingAudioSection').style.display = 'none';
+    }
+  }
+
+  // Function to play existing audio
+  async function playExistingAudio(audioId, playBtn) {
+    try {
+      const audioPlayer = document.getElementById(`existingAudio_${audioId}`);
+      if (!audioPlayer) return;
+      
+      // If already loaded, just toggle play/pause
+      if (audioPlayer.src) {
+        if (audioPlayer.paused) {
+          audioPlayer.play();
+          playBtn.innerHTML = '<span class="btn-icon">⏸️</span><span>Pause</span>';
+        } else {
+          audioPlayer.pause();
+          playBtn.innerHTML = '<span class="btn-icon">▶️</span><span>Play</span>';
+        }
+        return;
+      }
+      
+      // Load audio
+      playBtn.disabled = true;
+      playBtn.innerHTML = '<span class="btn-icon">⏳</span><span>Loading...</span>';
+      
+      const audioData = await voiceNoteToolAPI.getAudioById(audioId);
+      
+      // Convert base64 to blob URL
+      const binaryString = atob(audioData.audioBlob);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: audioData.audioMimeType });
+      const url = URL.createObjectURL(blob);
+      
+      audioPlayer.src = url;
+      audioPlayer.style.display = 'block';
+      audioPlayer.play();
+      
+      playBtn.disabled = false;
+      playBtn.innerHTML = '<span class="btn-icon">⏸️</span><span>Pause</span>';
+      
+      // Handle audio events
+      audioPlayer.onpause = () => {
+        playBtn.innerHTML = '<span class="btn-icon">▶️</span><span>Play</span>';
+      };
+      
+      audioPlayer.onended = () => {
+        playBtn.innerHTML = '<span class="btn-icon">▶️</span><span>Play</span>';
+      };
+      
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      playBtn.disabled = false;
+      playBtn.innerHTML = '<span class="btn-icon">▶️</span><span>Play</span>';
+      jobSearchError.textContent = 'Error loading audio file.';
       jobSearchError.className = 'inline-warning';
       jobSearchError.style.display = 'block';
     }
@@ -224,6 +337,7 @@ if (!isLoginPage) {
       // Hide sections
       document.getElementById('jobDetailsSection').style.display = 'none';
       document.getElementById('voiceNoteSection').style.display = 'none';
+      document.getElementById('existingAudioSection').style.display = 'none';
       
       currentJobNumber = null;
       
@@ -271,16 +385,15 @@ if (!isLoginPage) {
           saveVoiceNoteBtn.textContent = 'Saving...';
 
           const username = localStorage.getItem('username');
-          const voiceNoteData = {
+          const audioData = {
             jobNumber,
             toDepartment,
-            voiceNote: '',
             audioBlob: base64Audio,
             audioMimeType: audioBlob.type,
             createdBy: username
           };
 
-          await voiceNotesAPI.create(voiceNoteData);
+          await voiceNoteToolAPI.saveAudio(audioData);
 
           // Show success message
           jobSearchError.textContent = 'Voice note saved successfully!';
@@ -296,6 +409,11 @@ if (!isLoginPage) {
           audioChunks = [];
           audioPlayback.style.display = 'none';
           recordBtn.style.display = 'inline-flex';
+
+          // Refresh existing audio files list
+          if (currentJobNumber) {
+            await fetchExistingAudioFiles(currentJobNumber);
+          }
 
           // Hide success message after 2 seconds
           setTimeout(() => {
@@ -492,7 +610,6 @@ if (!isLoginPage) {
           const username = localStorage.getItem('username');
           const jobNumber = currentJobNumber;
           const toDepartment = document.getElementById('toDepartment').value;
-          const voiceNote = document.getElementById('voiceNote').value.trim();
 
           if (!jobNumber) {
             jobSearchError.textContent = 'Please select a job number first.';
@@ -512,16 +629,15 @@ if (!isLoginPage) {
             return;
           }
 
-          const voiceNoteData = {
+          const audioData = {
             jobNumber,
             toDepartment,
-            voiceNote: voiceNote || '',
             audioBlob: base64Audio,
             audioMimeType: audioBlob.type,
             createdBy: username
           };
 
-          await voiceNotesAPI.create(voiceNoteData);
+          await voiceNoteToolAPI.saveAudio(audioData);
 
           // Show success message
           jobSearchError.textContent = 'Audio saved successfully!';
@@ -537,6 +653,11 @@ if (!isLoginPage) {
           audioChunks = [];
           audioPlayback.style.display = 'none';
           recordBtn.style.display = 'inline-flex';
+          
+          // Refresh existing audio files list
+          if (currentJobNumber) {
+            await fetchExistingAudioFiles(currentJobNumber);
+          }
 
           setTimeout(() => {
             jobSearchError.style.display = 'none';

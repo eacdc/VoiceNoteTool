@@ -704,3 +704,111 @@ body {
     justify-content: center;
   }
 }
+
+/* Existing Audio Files Styles */
+.existing-audio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.existing-audio-item {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background-color: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(55, 65, 81, 0.6);
+  transition: all var(--transition-fast);
+}
+
+.existing-audio-item:hover {
+  background-color: rgba(15, 23, 42, 0.9);
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.audio-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.audio-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.audio-item-number {
+  font-weight: 600;
+  color: rgba(129, 140, 248, 0.9);
+  font-size: 0.9rem;
+}
+
+.audio-item-dept {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: rgba(79, 70, 229, 0.2);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.audio-item-date {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.audio-item-creator {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.audio-item-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.audio-item-play-btn:hover {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  border-color: rgba(16, 185, 129, 0.8);
+  transform: translateY(-1px);
+}
+
+.audio-item-play-btn:active {
+  transform: translateY(0);
+}
+
+.audio-item-play-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.existing-audio-player {
+  margin-top: 10px;
+}
+
+.no-audio-message {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 20px;
+  font-style: italic;
+}

@@ -72,7 +72,7 @@ export const jobsAPI = {
   getJobDetails: (jobNumber) => apiCall(`/jobs/details-update/${encodeURIComponent(jobNumber)}`)
 };
 
-// Voice Notes API
+// Voice Notes API (Legacy - for text notes)
 export const voiceNotesAPI = {
   create: (voiceNoteData) => apiCall('/voice-notes', {
     method: 'POST',
@@ -80,4 +80,21 @@ export const voiceNotesAPI = {
   }),
   getByJobNumber: (jobNumber) => apiCall(`/voice-notes/job/${encodeURIComponent(jobNumber)}`),
   getAll: () => apiCall('/voice-notes')
+};
+
+// Voice Note Tool API (New API for audio collection)
+export const voiceNoteToolAPI = {
+  // Save audio
+  saveAudio: (audioData) => apiCall('/voice-note-tool/audio', {
+    method: 'POST',
+    body: audioData
+  }),
+  // Get audio files for a job
+  getAudioByJobNumber: (jobNumber) => apiCall(`/voice-note-tool/audio/job/${encodeURIComponent(jobNumber)}`),
+  // Get specific audio file with blob
+  getAudioById: (id) => apiCall(`/voice-note-tool/audio/${encodeURIComponent(id)}`),
+  // Delete audio file
+  deleteAudio: (id) => apiCall(`/voice-note-tool/audio/${encodeURIComponent(id)}`, {
+    method: 'DELETE'
+  })
 };
