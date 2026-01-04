@@ -718,6 +718,15 @@ if (!isLoginPage) {
           audioPlayback.style.display = 'none';
           recordBtn.style.display = 'inline-flex';
           
+          // Clear department field
+          const toDepartmentField = document.getElementById('toDepartment');
+          if (toDepartmentField) {
+            toDepartmentField.value = '';
+          }
+          
+          // Scroll to top
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          
           // Refresh existing audio files list
           if (currentJobNumber) {
             await fetchExistingAudioFiles(currentJobNumber);
