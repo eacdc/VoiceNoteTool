@@ -475,6 +475,8 @@ if (!isLoginPage) {
   let audioUrl = null;
   let recordingTimer = null;
   let recordingStartTime = null;
+  let maxRecordingTime = 120000; // 2 minutes in milliseconds
+  let autoStopTimeout = null;
 
   const recordBtn = document.getElementById('recordBtn');
   const stopBtn = document.getElementById('stopBtn');
@@ -486,20 +488,133 @@ if (!isLoginPage) {
   const audioPlayback = document.getElementById('audioPlayback');
   const recordingStatus = document.getElementById('recordingStatus');
 
+  // Function to compress audio blob
+  async function compressAudio(blob) {
+    try {
+      // Create audio context
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Convert blob to array buffer
+      const arrayBuffer = await blob.arrayBuffer();
+      
+      // Decode audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Create offline context for compression (lower sample rate)
+      const sampleRate = 16000; // Reduce from 48000 to 16000 (good enough for voice)
+      const numberOfChannels = 1; // Mono instead of stereo
+      const offlineContext = new OfflineAudioContext(
+        numberOfChannels,
+        audioBuffer.duration * sampleRate,
+        sampleRate
+      );
+      
+      // Create buffer source
+      const source = offlineContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(offlineContext.destination);
+      source.start();
+      
+      // Render compressed audio
+      const compressedBuffer = await offlineContext.startRendering();
+      
+      // Convert to WAV format (smaller than webm for voice)
+      const wavBlob = await bufferToWave(compressedBuffer, sampleRate);
+      
+      console.log('🗜️ Original size:', Math.round(blob.size / 1024), 'KB');
+      console.log('🗜️ Compressed size:', Math.round(wavBlob.size / 1024), 'KB');
+      console.log('🗜️ Compression ratio:', Math.round((1 - wavBlob.size / blob.size) * 100) + '%');
+      
+      return wavBlob;
+    } catch (error) {
+      console.error('Error compressing audio:', error);
+      // Return original blob if compression fails
+      return blob;
+    }
+  }
+
+  // Function to convert audio buffer to WAV
+  function bufferToWave(abuffer, sampleRate) {
+    const numOfChan = abuffer.numberOfChannels;
+    const length = abuffer.length * numOfChan * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let offset = 0;
+    let pos = 0;
+
+    // Write WAV header
+    setUint32(0x46464952); // "RIFF"
+    setUint32(length - 8); // file length - 8
+    setUint32(0x45564157); // "WAVE"
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16); // length = 16
+    setUint16(1); // PCM (uncompressed)
+    setUint16(numOfChan);
+    setUint32(sampleRate);
+    setUint32(sampleRate * 2 * numOfChan); // avg. bytes/sec
+    setUint16(numOfChan * 2); // block-align
+    setUint16(16); // 16-bit
+    setUint32(0x61746164); // "data" - chunk
+    setUint32(length - pos - 4); // chunk length
+
+    // Write interleaved data
+    for (let i = 0; i < abuffer.numberOfChannels; i++) {
+      channels.push(abuffer.getChannelData(i));
+    }
+
+    while (pos < length) {
+      for (let i = 0; i < numOfChan; i++) {
+        let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(pos, sample, true);
+        pos += 2;
+      }
+      offset++;
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+
+    function setUint16(data) {
+      view.setUint16(pos, data, true);
+      pos += 2;
+    }
+
+    function setUint32(data) {
+      view.setUint32(pos, data, true);
+      pos += 4;
+    }
+  }
+
   // Record button
   if (recordBtn) {
     recordBtn.addEventListener('click', async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
+        
+        // Use audio/webm with opus codec for better compression
+        const options = { mimeType: 'audio/webm;codecs=opus' };
+        
+        // Fallback if opus not supported
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options.mimeType = 'audio/webm';
+        }
+        
+        mediaRecorder = new MediaRecorder(stream, options);
         audioChunks = [];
 
         mediaRecorder.ondataavailable = (event) => {
           audioChunks.push(event.data);
         };
 
-        mediaRecorder.onstop = () => {
-          audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        mediaRecorder.onstop = async () => {
+          const originalBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+          
+          // Show compressing message
+          recordingStatus.textContent = 'Compressing audio...';
+          
+          // Compress audio
+          audioBlob = await compressAudio(originalBlob);
           audioUrl = URL.createObjectURL(audioBlob);
           audioPlayer.src = audioUrl;
           
@@ -520,10 +635,27 @@ if (!isLoginPage) {
             clearInterval(recordingTimer);
             recordingTimer = null;
           }
+          if (autoStopTimeout) {
+            clearTimeout(autoStopTimeout);
+            autoStopTimeout = null;
+          }
         };
 
         mediaRecorder.start();
         recordingStartTime = Date.now();
+        
+        // Auto-stop after 2 minutes
+        autoStopTimeout = setTimeout(() => {
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            jobSearchError.textContent = 'Recording stopped automatically (2 minute limit reached).';
+            jobSearchError.className = 'inline-info';
+            jobSearchError.style.display = 'block';
+            setTimeout(() => {
+              jobSearchError.style.display = 'none';
+            }, 3000);
+          }
+        }, maxRecordingTime);
         
         // Show stop button
         recordBtn.style.display = 'none';
@@ -531,14 +663,17 @@ if (!isLoginPage) {
         
         // Show recording status
         recordingStatus.classList.add('recording');
-        recordingStatus.textContent = 'Recording... 00:00';
+        recordingStatus.textContent = 'Recording... 00:00 / 02:00';
         
         // Update recording timer
         recordingTimer = setInterval(() => {
           const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+          const remaining = Math.floor((maxRecordingTime - (Date.now() - recordingStartTime)) / 1000);
           const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
           const seconds = (elapsed % 60).toString().padStart(2, '0');
-          recordingStatus.textContent = `Recording... ${minutes}:${seconds}`;
+          const remainingMinutes = Math.floor(remaining / 60).toString().padStart(2, '0');
+          const remainingSeconds = (remaining % 60).toString().padStart(2, '0');
+          recordingStatus.textContent = `Recording... ${minutes}:${seconds} / ${remainingMinutes}:${remainingSeconds} remaining`;
         }, 1000);
       } catch (error) {
         console.error('Error accessing microphone:', error);
@@ -554,6 +689,12 @@ if (!isLoginPage) {
     stopBtn.addEventListener('click', () => {
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
+        
+        // Clear auto-stop timeout
+        if (autoStopTimeout) {
+          clearTimeout(autoStopTimeout);
+          autoStopTimeout = null;
+        }
       }
     });
   }
