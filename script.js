@@ -1,39 +1,10 @@
 import { authAPI, jobsAPI, voiceNotesAPI, voiceNoteToolAPI } from './api.js';
 
-// Hide loading indicator when script loads
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hideLoader);
-} else {
-  hideLoader();
-}
-
-function hideLoader() {
-  const loader = document.getElementById('loading-indicator');
-  if (loader) {
-    setTimeout(() => {
-      loader.classList.add('hidden');
-    }, 300);
-  }
-}
-
 // Global error handler for module loading issues
 window.addEventListener('error', (event) => {
   console.error('Global error:', event);
-  if (event.message && (event.message.includes('Failed to fetch dynamically imported module') || 
-      event.message.includes('Cannot find module') ||
-      event.message.includes('Unexpected token'))) {
-    showError('Failed to load application files. Please refresh the page or check your internet connection.');
-  }
 }, true);
 
-// Function to show error message
-function showError(message) {
-  const loader = document.getElementById('loading-indicator');
-  if (loader) {
-    loader.innerHTML = `<div style="text-align: center; padding: 20px;"><h2 style="color: #ef4444;">⚠️ Error</h2><p>${message}</p><button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer;">Refresh Page</button></div>`;
-    loader.classList.remove('hidden');
-  }
-}
 
 // Check if user is on login page or main page
 const pathname = window.location.pathname;
@@ -61,6 +32,9 @@ if (!isLoginPage) {
 if (isLoginPage) {
   const loginForm = document.getElementById('loginForm');
   const loginError = document.getElementById('loginError');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginBtnText = document.getElementById('loginBtnText');
+  const loginBtnIcon = document.getElementById('loginBtnIcon');
 
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -73,6 +47,15 @@ if (isLoginPage) {
       loginError.textContent = 'Please select a username.';
       loginError.style.display = 'block';
       return;
+    }
+
+    // Set loading state
+    if (loginBtn) {
+      loginBtn.disabled = true;
+      if (loginBtnText) loginBtnText.textContent = 'Loading...';
+      if (loginBtnIcon) {
+        loginBtnIcon.innerHTML = '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="15.708" stroke-dashoffset="15.708" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" dur="1s" repeatCount="indefinite" values="0 12 12;360 12 12"/><animate attributeName="stroke-dashoffset" dur="1.5s" values="0;15.708" repeatCount="indefinite"/></circle>';
+      }
     }
 
     try {
@@ -88,6 +71,16 @@ if (isLoginPage) {
       console.error('Login error:', error);
       loginError.textContent = error.message || 'Login failed. Please try again.';
       loginError.style.display = 'block';
+      
+      // Reset button state
+      if (loginBtn) {
+        loginBtn.disabled = false;
+        if (loginBtnText) loginBtnText.textContent = 'Login';
+        if (loginBtnIcon) {
+          loginBtnIcon.style.display = 'block';
+          loginBtnIcon.innerHTML = '<path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+        }
+      }
     }
   });
 }
@@ -228,7 +221,8 @@ if (!isLoginPage) {
   // Function to fetch existing audio files
   async function fetchExistingAudioFiles(jobNumber) {
     try {
-      const audioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber);
+      const username = localStorage.getItem('username');
+      const audioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber, username);
       const existingAudioList = document.getElementById('existingAudioList');
       const existingAudioSection = document.getElementById('existingAudioSection');
       
@@ -244,7 +238,6 @@ if (!isLoginPage) {
                 <span class="audio-item-number">#${index + 1}</span>
                 <span class="audio-item-dept">${audioFile.toDepartment}</span>
                 <span class="audio-item-date">${new Date(audioFile.createdAt).toLocaleString()}</span>
-                <span class="audio-item-creator">by ${audioFile.createdBy}</span>
               </div>
               <button class="audio-item-play-btn" data-audio-id="${audioFile._id}">
                 <span class="btn-icon">▶️</span>

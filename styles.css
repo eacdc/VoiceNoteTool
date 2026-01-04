@@ -156,6 +156,7 @@ body {
   justify-content: center;
   align-items: center;
   padding: 40px 20px;
+  width: 100%;
 }
 
 .login-panel {
@@ -667,6 +668,19 @@ body {
 @media (max-width: 600px) {
   .app {
     padding-inline: 16px;
+  }
+
+  .app-main--login {
+    padding: 20px 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-panel {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 32px 24px;
   }
 
   .app-header {

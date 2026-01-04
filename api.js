@@ -89,8 +89,11 @@ export const voiceNoteToolAPI = {
     method: 'POST',
     body: audioData
   }),
-  // Get audio files for a job
-  getAudioByJobNumber: (jobNumber) => apiCall(`/voice-note-tool/audio/job/${encodeURIComponent(jobNumber)}`),
+  // Get audio files for a job (with optional username filter)
+  getAudioByJobNumber: (jobNumber, username) => {
+    const url = `/voice-note-tool/audio/job/${encodeURIComponent(jobNumber)}${username ? `?username=${encodeURIComponent(username)}` : ''}`;
+    return apiCall(url);
+  },
   // Get specific audio file with blob
   getAudioById: (id) => apiCall(`/voice-note-tool/audio/${encodeURIComponent(id)}`),
   // Delete audio file
