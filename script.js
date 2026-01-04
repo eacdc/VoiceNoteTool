@@ -343,6 +343,7 @@ if (!isLoginPage) {
   let recordingStartTime = null;
   let maxRecordingTime = 120000; // 2 minutes in milliseconds
   let autoStopTimeout = null;
+  let audioSummary = null; // Store AI analysis summary
 
   const recordBtn = document.getElementById('recordBtn');
   const stopBtn = document.getElementById('stopBtn');
@@ -516,9 +517,7 @@ if (!isLoginPage) {
           // Stop all tracks
           stream.getTracks().forEach(track => track.stop());
           
-          // Clear recording status
-          recordingStatus.classList.remove('recording');
-          recordingStatus.textContent = '';
+          // Clear recording timer
           if (recordingTimer) {
             clearInterval(recordingTimer);
             recordingTimer = null;
@@ -526,6 +525,59 @@ if (!isLoginPage) {
           if (autoStopTimeout) {
             clearTimeout(autoStopTimeout);
             autoStopTimeout = null;
+          }
+          
+          // Analyze audio with OpenAI
+          recordingStatus.classList.add('analyzing');
+          recordingStatus.textContent = '🤖 Analyzing audio with AI...';
+          
+          try {
+            const toDepartment = document.getElementById('toDepartment');
+            if (!toDepartment || !toDepartment.value) {
+              recordingStatus.classList.remove('analyzing');
+              recordingStatus.textContent = '⚠️ Please select a department first';
+              recordingStatus.className = 'recording-status warning';
+              return;
+            }
+            
+            // Convert blob to base64
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64Audio = reader.result.split(',')[1];
+              
+              try {
+                const analysisResult = await voiceNoteToolAPI.analyzeAudio({
+                  audioBlob: base64Audio,
+                  audioMimeType: audioBlob.type,
+                  toDepartment: toDepartment.value
+                });
+                
+                // Store summary for saving
+                audioSummary = analysisResult.analysis;
+                
+                // Display analysis result in summary area
+                recordingStatus.classList.remove('analyzing', 'recording');
+                recordingStatus.className = 'recording-status success';
+                recordingStatus.textContent = '✅ AI Analysis Complete';
+                
+                // Display summary in the summary area
+                audioSummaryContent.innerHTML = `<div style="white-space: pre-wrap; line-height: 1.6;">${analysisResult.analysis}</div>`;
+                audioSummaryDiv.style.display = 'block';
+                
+                console.log('✅ Analysis:', analysisResult);
+              } catch (error) {
+                console.error('Error analyzing audio:', error);
+                recordingStatus.classList.remove('analyzing', 'recording');
+                recordingStatus.className = 'recording-status warning';
+                recordingStatus.textContent = '⚠️ AI analysis failed: ' + (error.message || 'Unknown error');
+              }
+            };
+            reader.readAsDataURL(audioBlob);
+          } catch (error) {
+            console.error('Error preparing audio for analysis:', error);
+            recordingStatus.classList.remove('analyzing', 'recording');
+            recordingStatus.className = 'recording-status warning';
+            recordingStatus.textContent = '⚠️ Error preparing audio for analysis';
           }
         };
 
@@ -637,6 +689,7 @@ if (!isLoginPage) {
       }
       audioBlob = null;
       audioChunks = [];
+      audioSummary = null; // Clear summary
       
       // Reset UI
       audioPlayback.style.display = 'none';
@@ -644,6 +697,18 @@ if (!isLoginPage) {
       stopBtn.style.display = 'none';
       playBtn.style.display = 'inline-flex';
       pauseBtn.style.display = 'none';
+      
+      // Hide summary
+      if (audioSummaryDiv) {
+        audioSummaryDiv.style.display = 'none';
+      }
+      if (audioSummaryContent) {
+        audioSummaryContent.innerHTML = '';
+      }
+      if (recordingStatus) {
+        recordingStatus.textContent = '';
+        recordingStatus.className = 'recording-status';
+      }
       
       if (audioPlayer) {
         audioPlayer.src = '';
@@ -715,8 +780,21 @@ if (!isLoginPage) {
           }
           audioBlob = null;
           audioChunks = [];
+          audioSummary = null; // Clear summary
           audioPlayback.style.display = 'none';
           recordBtn.style.display = 'inline-flex';
+          
+          // Hide summary
+          if (audioSummaryDiv) {
+            audioSummaryDiv.style.display = 'none';
+          }
+          if (audioSummaryContent) {
+            audioSummaryContent.innerHTML = '';
+          }
+          if (recordingStatus) {
+            recordingStatus.textContent = '';
+            recordingStatus.className = 'recording-status';
+          }
           
           // Clear department field
           const toDepartmentField = document.getElementById('toDepartment');

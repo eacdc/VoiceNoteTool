@@ -99,5 +99,10 @@ export const voiceNoteToolAPI = {
   // Delete audio file
   deleteAudio: (id) => apiCall(`/voice-note-tool/audio/${encodeURIComponent(id)}`, {
     method: 'DELETE'
+  }),
+  // Analyze audio with OpenAI
+  analyzeAudio: (audioData) => apiCall('/voice-note-tool/analyze-audio', {
+    method: 'POST',
+    body: audioData
   })
 };
