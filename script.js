@@ -330,143 +330,11 @@ if (!isLoginPage) {
     }
   }
 
-  // Job search form submit
-  jobSearchForm.addEventListener('submit', async (e) => {
+  // Prevent form submission (no search button needed - auto-search on input)
+  jobSearchForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const jobNumber = jobNumberInput.value.trim();
-    
-    jobSearchError.style.display = 'none';
-    jobSearchError.className = 'inline-warning';
-    jobNumberDropdown.style.display = 'none';
-
-    if (!jobNumber) {
-      jobSearchError.textContent = 'Please enter a job number.';
-      jobSearchError.style.display = 'block';
-      return;
-    }
-
-    try {
-      // Store current job number
-      currentJobNumber = jobNumber;
-      
-      // Fetch job details to display
-      await fetchJobDetails(jobNumber);
-      
-      // Show success message
-      jobSearchError.textContent = 'Job details loaded successfully!';
-      jobSearchError.className = 'inline-success';
-      jobSearchError.style.display = 'block';
-      
-      // Hide success message after 2 seconds
-      setTimeout(() => {
-        jobSearchError.style.display = 'none';
-      }, 2000);
-    } catch (error) {
-      console.error('Error loading job details:', error);
-      // Clear job details if fetch fails
-      document.getElementById('clientName').value = '';
-      document.getElementById('jobName').value = '';
-      document.getElementById('orderQuantity').value = 0;
-      document.getElementById('poDate').value = '';
-      
-      // Hide sections
-      document.getElementById('jobDetailsSection').style.display = 'none';
-      document.getElementById('voiceNoteSection').style.display = 'none';
-      document.getElementById('existingAudioSection').style.display = 'none';
-      
-      currentJobNumber = null;
-      
-      jobSearchError.textContent = error.message || 'Failed to load job details.';
-      jobSearchError.className = 'inline-warning';
-      jobSearchError.style.display = 'block';
-    }
   });
 
-  // Save voice note functionality
-  const saveVoiceNoteBtn = document.getElementById('saveVoiceNoteBtn');
-  if (saveVoiceNoteBtn) {
-    saveVoiceNoteBtn.addEventListener('click', async () => {
-      const jobNumber = currentJobNumber;
-      const toDepartment = document.getElementById('toDepartment').value;
-
-      if (!jobNumber) {
-        jobSearchError.textContent = 'Please select a job number first.';
-        jobSearchError.className = 'inline-warning';
-        jobSearchError.style.display = 'block';
-        return;
-      }
-
-      if (!toDepartment) {
-        jobSearchError.textContent = 'Please select a department.';
-        jobSearchError.className = 'inline-warning';
-        jobSearchError.style.display = 'block';
-        return;
-      }
-
-      if (!audioBlob) {
-        jobSearchError.textContent = 'Please record audio first.';
-        jobSearchError.className = 'inline-warning';
-        jobSearchError.style.display = 'block';
-        return;
-      }
-
-      // Convert blob to base64 and save
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Audio = reader.result.split(',')[1];
-        
-        try {
-          saveVoiceNoteBtn.disabled = true;
-          saveVoiceNoteBtn.textContent = 'Saving...';
-
-          const username = localStorage.getItem('username');
-          const audioData = {
-            jobNumber,
-            toDepartment,
-            audioBlob: base64Audio,
-            audioMimeType: audioBlob.type,
-            createdBy: username
-          };
-
-          await voiceNoteToolAPI.saveAudio(audioData);
-
-          // Show success message
-          jobSearchError.textContent = 'Voice note saved successfully!';
-          jobSearchError.className = 'inline-success';
-          jobSearchError.style.display = 'block';
-
-          // Clear audio and reset UI
-          if (audioUrl) {
-            URL.revokeObjectURL(audioUrl);
-            audioUrl = null;
-          }
-          audioBlob = null;
-          audioChunks = [];
-          audioPlayback.style.display = 'none';
-          recordBtn.style.display = 'inline-flex';
-
-          // Refresh existing audio files list
-          if (currentJobNumber) {
-            await fetchExistingAudioFiles(currentJobNumber);
-          }
-
-          // Hide success message after 2 seconds
-          setTimeout(() => {
-            jobSearchError.style.display = 'none';
-          }, 2000);
-        } catch (error) {
-          console.error('Error saving voice note:', error);
-          jobSearchError.textContent = error.message || 'Failed to save voice note.';
-          jobSearchError.className = 'inline-warning';
-          jobSearchError.style.display = 'block';
-        } finally {
-          saveVoiceNoteBtn.disabled = false;
-          saveVoiceNoteBtn.textContent = 'Save Voice Note';
-        }
-      };
-      reader.readAsDataURL(audioBlob);
-    });
-  }
 
   // Audio Recording Functionality
   let mediaRecorder = null;
@@ -589,6 +457,21 @@ if (!isLoginPage) {
   // Record button
   if (recordBtn) {
     recordBtn.addEventListener('click', async () => {
+      // Check if department is selected before starting recording
+      const toDepartment = document.getElementById('toDepartment');
+      if (!toDepartment || !toDepartment.value) {
+        alert('Please select a department before recording audio.');
+        toDepartment?.focus();
+        return;
+      }
+
+      // Check if job number is selected
+      if (!currentJobNumber) {
+        alert('Please select a job number first.');
+        jobNumberInput?.focus();
+        return;
+      }
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
