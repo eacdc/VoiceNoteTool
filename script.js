@@ -162,6 +162,8 @@ if (!isLoginPage) {
             item.addEventListener('click', () => {
               jobNumberInput.value = jobNum;
               jobNumberDropdown.style.display = 'none';
+              // Set current job number
+              currentJobNumber = jobNum;
               // Trigger job details fetch
               fetchJobDetails(jobNum);
             });
@@ -191,6 +193,9 @@ if (!isLoginPage) {
   // Function to fetch job details and audio files
   async function fetchJobDetails(jobNumber) {
     try {
+      // Set current job number
+      currentJobNumber = jobNumber;
+      
       const jobDetails = await jobsAPI.getJobDetails(jobNumber);
       
       // Populate job details section
@@ -466,10 +471,17 @@ if (!isLoginPage) {
       }
 
       // Check if job number is selected
-      if (!currentJobNumber) {
+      // Use currentJobNumber if set, otherwise check the input value
+      const jobNumber = currentJobNumber || jobNumberInput?.value?.trim();
+      if (!jobNumber) {
         alert('Please select a job number first.');
         jobNumberInput?.focus();
         return;
+      }
+      
+      // Update currentJobNumber if it wasn't set
+      if (!currentJobNumber && jobNumber) {
+        currentJobNumber = jobNumber;
       }
 
       try {
