@@ -90,41 +90,13 @@ if (isLoginPage) {
       }
     }
   });
-}
 
-// Main page functionality
-if (!isLoginPage) {
-  // Logout functionality
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('username');
-      window.location.href = 'index.html';
-    });
-  }
-
-  // User Management functionality
-  const addUserBtn = document.getElementById('addUserBtn');
-  const userManagementSection = document.getElementById('userManagementSection');
+  // Add User functionality on login page
   const addUserForm = document.getElementById('addUserForm');
   const addUserError = document.getElementById('addUserError');
   const addUserSuccess = document.getElementById('addUserSuccess');
   const addUserSubmitBtn = document.getElementById('addUserSubmitBtn');
 
-  // Show "Add User" button (always visible for now, can be restricted to admins later)
-  if (addUserBtn) {
-    addUserBtn.style.display = 'inline-flex';
-    addUserBtn.addEventListener('click', () => {
-      if (userManagementSection) {
-        userManagementSection.style.display = 'block';
-        // Scroll to the section
-        userManagementSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    });
-  }
-
-  // Handle add user form submission
   if (addUserForm) {
     addUserForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -151,7 +123,7 @@ if (!isLoginPage) {
       // Set loading state
       if (addUserSubmitBtn) {
         addUserSubmitBtn.disabled = true;
-        addUserSubmitBtn.innerHTML = '<span>Adding...</span>';
+        addUserSubmitBtn.innerHTML = '<span>Creating...</span>';
       }
 
       try {
@@ -159,7 +131,7 @@ if (!isLoginPage) {
         
         // Show success message
         if (addUserSuccess) {
-          addUserSuccess.textContent = `User "${username}" created successfully!`;
+          addUserSuccess.textContent = `User "${username}" created successfully! You can now login.`;
           addUserSuccess.style.display = 'block';
         }
 
@@ -167,12 +139,12 @@ if (!isLoginPage) {
         document.getElementById('newUsername').value = '';
         document.getElementById('newPassword').value = '';
 
-        // Hide success message after 3 seconds
+        // Hide success message after 5 seconds
         setTimeout(() => {
           if (addUserSuccess) {
             addUserSuccess.style.display = 'none';
           }
-        }, 3000);
+        }, 5000);
       } catch (error) {
         console.error('Error creating user:', error);
         if (addUserError) {
@@ -182,9 +154,22 @@ if (!isLoginPage) {
       } finally {
         if (addUserSubmitBtn) {
           addUserSubmitBtn.disabled = false;
-          addUserSubmitBtn.innerHTML = '<span>Add User</span>';
+          addUserSubmitBtn.innerHTML = '<span>Create Account</span>';
         }
       }
+    });
+  }
+}
+
+// Main page functionality
+if (!isLoginPage) {
+  // Logout functionality
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      window.location.href = 'index.html';
     });
   }
 
