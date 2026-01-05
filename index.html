@@ -27,27 +27,35 @@
               </svg>
             </div>
             <h2>Welcome Back</h2>
-            <p class="login-subtitle">Select your username to continue</p>
+            <p class="login-subtitle">Enter your credentials to continue</p>
           </div>
           <form id="loginForm">
             <div class="field">
               <label for="username">Username</label>
-              <select
+              <input
                 id="username"
                 name="username"
+                type="text"
+                placeholder="Enter your username"
                 required
                 autocomplete="username"
-              >
-                <option value="">Select your username</option>
-                <option value="shyam">Shyam</option>
-                <option value="shib">Shib</option>
-                <option value="sanjay">Sanjay</option>
-              </select>
+              />
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
+                required
+                autocomplete="current-password"
+              />
             </div>
             <p class="inline-warning" id="loginError" style="display: none;"></p>
-            <button class="primary-btn" type="submit">
-              <span>Login</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <button class="primary-btn" type="submit" id="loginBtn">
+              <span id="loginBtnText">Login</span>
+              <svg id="loginBtnIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>

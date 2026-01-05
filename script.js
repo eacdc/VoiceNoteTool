@@ -1,4 +1,4 @@
-import { authAPI, jobsAPI, voiceNotesAPI, voiceNoteToolAPI } from './api.js';
+import { authAPI, jobsAPI, voiceNotesAPI, voiceNoteToolAPI, voiceNoteUserAPI } from './api.js';
 
 // Global error handler for module loading issues
 window.addEventListener('error', (event) => {
@@ -39,12 +39,19 @@ if (isLoginPage) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
     
     loginError.style.display = 'none';
     loginError.className = 'inline-warning';
 
     if (!username) {
-      loginError.textContent = 'Please select a username.';
+      loginError.textContent = 'Please enter your username.';
+      loginError.style.display = 'block';
+      return;
+    }
+
+    if (!password) {
+      loginError.textContent = 'Please enter your password.';
       loginError.style.display = 'block';
       return;
     }
@@ -59,7 +66,7 @@ if (isLoginPage) {
     }
 
     try {
-      const response = await authAPI.login(username);
+      const response = await authAPI.login(username, password);
       
       // Store token and username
       localStorage.setItem('token', response.token || 'dummy-token');
@@ -69,7 +76,7 @@ if (isLoginPage) {
       window.location.href = 'main.html';
     } catch (error) {
       console.error('Login error:', error);
-      loginError.textContent = error.message || 'Login failed. Please try again.';
+      loginError.textContent = error.message || 'Login failed. Please check your credentials.';
       loginError.style.display = 'block';
       
       // Reset button state
@@ -94,6 +101,90 @@ if (!isLoginPage) {
       localStorage.removeItem('token');
       localStorage.removeItem('username');
       window.location.href = 'index.html';
+    });
+  }
+
+  // User Management functionality
+  const addUserBtn = document.getElementById('addUserBtn');
+  const userManagementSection = document.getElementById('userManagementSection');
+  const addUserForm = document.getElementById('addUserForm');
+  const addUserError = document.getElementById('addUserError');
+  const addUserSuccess = document.getElementById('addUserSuccess');
+  const addUserSubmitBtn = document.getElementById('addUserSubmitBtn');
+
+  // Show "Add User" button (always visible for now, can be restricted to admins later)
+  if (addUserBtn) {
+    addUserBtn.style.display = 'inline-flex';
+    addUserBtn.addEventListener('click', () => {
+      if (userManagementSection) {
+        userManagementSection.style.display = 'block';
+        // Scroll to the section
+        userManagementSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
+
+  // Handle add user form submission
+  if (addUserForm) {
+    addUserForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+
+      // Hide previous messages
+      if (addUserError) {
+        addUserError.style.display = 'none';
+      }
+      if (addUserSuccess) {
+        addUserSuccess.style.display = 'none';
+      }
+
+      if (!username || !password) {
+        if (addUserError) {
+          addUserError.textContent = 'Please enter both username and password.';
+          addUserError.style.display = 'block';
+        }
+        return;
+      }
+
+      // Set loading state
+      if (addUserSubmitBtn) {
+        addUserSubmitBtn.disabled = true;
+        addUserSubmitBtn.innerHTML = '<span>Adding...</span>';
+      }
+
+      try {
+        await voiceNoteUserAPI.createUser(username, password);
+        
+        // Show success message
+        if (addUserSuccess) {
+          addUserSuccess.textContent = `User "${username}" created successfully!`;
+          addUserSuccess.style.display = 'block';
+        }
+
+        // Clear form
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          if (addUserSuccess) {
+            addUserSuccess.style.display = 'none';
+          }
+        }, 3000);
+      } catch (error) {
+        console.error('Error creating user:', error);
+        if (addUserError) {
+          addUserError.textContent = error.message || 'Failed to create user. Please try again.';
+          addUserError.style.display = 'block';
+        }
+      } finally {
+        if (addUserSubmitBtn) {
+          addUserSubmitBtn.disabled = false;
+          addUserSubmitBtn.innerHTML = '<span>Add User</span>';
+        }
+      }
     });
   }
 

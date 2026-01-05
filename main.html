@@ -39,6 +39,7 @@
         </div>
         <div class="header-actions">
           <span class="username-display" id="usernameDisplay"></span>
+          <button class="header-btn" id="addUserBtn" style="display: none;">Add User</button>
           <button class="header-btn" id="logoutBtn">Logout</button>
         </div>
       </header>
@@ -99,8 +100,10 @@
               <select id="toDepartment" name="toDepartment" required>
                 <option value="">Select Department</option>
                 <option value="prepress">Prepress</option>
-                <option value="postpress">Postpress</option>
+                <option value="postpress">Sales</option>
                 <option value="printing">Printing</option>
+                <option value="printing">Post Printing</option>
+                <option value="printing">Packing and Dispatch</option>
               </select>
             </div>
           </div>
@@ -118,7 +121,7 @@
           </div>
         </section>
 
-        <!-- Section 3: Voice Note Entry -->
+        <!-- Section 4: Voice Note Entry -->
         <section class="panel panel--collapsible" id="voiceNoteSection" style="display: none;">
           <header class="panel-header">
             <h3>Record New Audio</h3>

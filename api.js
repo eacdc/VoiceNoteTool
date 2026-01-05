@@ -58,9 +58,17 @@ async function apiCall(endpoint, options = {}) {
 
 // Auth API
 export const authAPI = {
-  login: (username) => apiCall('/auth/login-voice-note', {
+  login: (username, password) => apiCall('/auth/login-voice-note', {
     method: 'POST',
-    body: { username }
+    body: { username, password }
+  })
+};
+
+// Voice Note Tool User Management API
+export const voiceNoteUserAPI = {
+  createUser: (username, password) => apiCall('/voice-note-tool/users', {
+    method: 'POST',
+    body: { username, password }
   })
 };
 
