@@ -354,6 +354,8 @@ if (!isLoginPage) {
   const audioPlayer = document.getElementById('audioPlayer');
   const audioPlayback = document.getElementById('audioPlayback');
   const recordingStatus = document.getElementById('recordingStatus');
+  const audioSummaryDiv = document.getElementById('audioSummary');
+  const audioSummaryContent = document.getElementById('audioSummaryContent');
 
   // Function to compress audio blob
   async function compressAudio(blob) {
