@@ -765,7 +765,8 @@ if (!isLoginPage) {
             toDepartment,
             audioBlob: base64Audio,
             audioMimeType: audioBlob.type,
-            createdBy: username
+            createdBy: username,
+            summary: audioSummary || '' // Include summary if available
           };
 
           await voiceNoteToolAPI.saveAudio(audioData);
