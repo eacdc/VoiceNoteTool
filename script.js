@@ -68,9 +68,10 @@ if (isLoginPage) {
     try {
       const response = await authAPI.login(username, password);
       
-      // Store token and username
+      // Store token, userId, and username from DB (normalized)
       localStorage.setItem('token', response.token || 'dummy-token');
-      localStorage.setItem('username', username);
+      localStorage.setItem('userId', response.userId || '');
+      localStorage.setItem('username', response.username || username.toLowerCase()); // Use DB username
       
       // Redirect to main page
       window.location.href = 'main.html';
@@ -169,6 +170,7 @@ if (!isLoginPage) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('token');
       localStorage.removeItem('username');
+      localStorage.removeItem('userId');
       window.location.href = 'index.html';
     });
   }
@@ -297,8 +299,8 @@ if (!isLoginPage) {
   // Function to fetch existing audio files
   async function fetchExistingAudioFiles(jobNumber) {
     try {
-      const username = localStorage.getItem('username');
-      const audioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber, username);
+      const userId = localStorage.getItem('userId');
+      const audioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber, userId);
       const existingAudioList = document.getElementById('existingAudioList');
       const existingAudioSection = document.getElementById('existingAudioSection');
       
@@ -815,6 +817,7 @@ if (!isLoginPage) {
           saveAudioBtn.innerHTML = '<span class="btn-icon">⏳</span><span>Saving...</span>';
 
           const username = localStorage.getItem('username');
+          const userId = localStorage.getItem('userId');
           const jobNumber = currentJobNumber;
           const toDepartment = document.getElementById('toDepartment').value;
 
@@ -836,12 +839,22 @@ if (!isLoginPage) {
             return;
           }
 
+          if (!userId) {
+            jobSearchError.textContent = 'User ID not found. Please login again.';
+            jobSearchError.className = 'inline-warning';
+            jobSearchError.style.display = 'block';
+            saveAudioBtn.disabled = false;
+            saveAudioBtn.innerHTML = '<span class="btn-icon">💾</span><span>Save</span>';
+            return;
+          }
+
           const audioData = {
             jobNumber,
             toDepartment,
             audioBlob: base64Audio,
             audioMimeType: audioBlob.type,
-            createdBy: username,
+            createdBy: username, // Store username for display
+            userId: userId, // Store userId for filtering
             summary: audioSummary || '' // Include summary if available
           };
 

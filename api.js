@@ -97,9 +97,9 @@ export const voiceNoteToolAPI = {
     method: 'POST',
     body: audioData
   }),
-  // Get audio files for a job (with optional username filter)
-  getAudioByJobNumber: (jobNumber, username) => {
-    const url = `/voice-note-tool/audio/job/${encodeURIComponent(jobNumber)}${username ? `?username=${encodeURIComponent(username)}` : ''}`;
+  // Get audio files for a job (with optional userId filter)
+  getAudioByJobNumber: (jobNumber, userId) => {
+    const url = `/voice-note-tool/audio/job/${encodeURIComponent(jobNumber)}${userId ? `?userId=${encodeURIComponent(userId)}` : ''}`;
     return apiCall(url);
   },
   // Get specific audio file with blob
