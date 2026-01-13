@@ -478,16 +478,78 @@ if (!isLoginPage) {
       
       let hasAnyAudio = false;
       
-      // 1. Fetch common audio (for the main searched job)
-      console.log('🎵 [FRONTEND] Fetching common audio for main job:', mainJobNumber);
-      const commonAudioFiles = await voiceNoteToolAPI.getAudioByJobNumber(mainJobNumber, userId);
+      // Fetch audio for ALL job numbers
+      console.log('🎵 [FRONTEND] Fetching audio for all jobs:', currentJobNumbers);
+      const allJobAudioMap = new Map(); // jobNumber -> audioFiles[]
       
-      if (commonAudioFiles && commonAudioFiles.length > 0) {
-        hasAnyAudio = true;
+      for (const jobNumber of currentJobNumbers) {
+        const audioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber, userId);
+        if (audioFiles && audioFiles.length > 0) {
+          allJobAudioMap.set(jobNumber, audioFiles);
+          hasAnyAudio = true;
+        }
+      }
+      
+      if (!hasAnyAudio) {
+        existingAudioSection.style.display = 'none';
+        return;
+      }
+      
+      // Identify common vs job-specific audio files using audioId
+      // Common audio = audio files with the same audioId in multiple (2+) jobs
+      // Job-specific = audio files that exist in only one job
+      
+      const audioIdMap = new Map(); // audioId -> { audioFile, jobNumbers[] }
+      
+      // Group audio files by audioId and track which jobs they appear in
+      allJobAudioMap.forEach((audioFiles, jobNumber) => {
+        audioFiles.forEach(audioFile => {
+          const audioId = audioFile.audioId;
+          
+          if (!audioId) {
+            // Skip audio files without audioId (legacy data)
+            console.warn('⚠️ [FRONTEND] Audio file without audioId found:', audioFile._id);
+            return;
+          }
+          
+          if (!audioIdMap.has(audioId)) {
+            audioIdMap.set(audioId, {
+              audioFile: audioFile,
+              jobNumbers: []
+            });
+          }
+          audioIdMap.get(audioId).jobNumbers.push(jobNumber);
+        });
+      });
+      
+      // Separate common and job-specific audio based on audioId
+      const commonAudioFiles = [];
+      const jobSpecificAudioMap = new Map(); // jobNumber -> audioFiles[]
+      
+      audioIdMap.forEach((data) => {
+        if (data.jobNumbers.length >= 2) {
+          // Common audio (same audioId appears in 2+ jobs)
+          commonAudioFiles.push({
+            ...data.audioFile,
+            jobNumbers: data.jobNumbers
+          });
+          console.log(`✅ [FRONTEND] Common audio found - audioId: ${data.audioFile.audioId}, jobs: ${data.jobNumbers.join(', ')}`);
+        } else {
+          // Job-specific audio (audioId appears in only 1 job)
+          const jobNumber = data.jobNumbers[0];
+          if (!jobSpecificAudioMap.has(jobNumber)) {
+            jobSpecificAudioMap.set(jobNumber, []);
+          }
+          jobSpecificAudioMap.get(jobNumber).push(data.audioFile);
+        }
+      });
+      
+      // 1. Display common audio files
+      if (commonAudioFiles.length > 0) {
         commonAudioList.innerHTML = '';
         
         commonAudioFiles.forEach((audioFile, index) => {
-          const audioItem = createAudioItem(audioFile, index, null);
+          const audioItem = createAudioItem(audioFile, index, null, audioFile.jobNumbers);
           commonAudioList.appendChild(audioItem);
         });
         
@@ -496,61 +558,49 @@ if (!isLoginPage) {
         commonAudioSection.style.display = 'none';
       }
       
-      // 2. Fetch job-specific audio (for all other jobs)
-      const otherJobNumbers = currentJobNumbers.filter(jn => jn !== mainJobNumber);
-      console.log('🎵 [FRONTEND] Fetching job-specific audio for jobs:', otherJobNumbers);
-      
-      if (otherJobNumbers.length > 0) {
+      // 2. Display job-specific audio files
+      if (jobSpecificAudioMap.size > 0) {
         jobSpecificAudioList.innerHTML = '';
         
-        for (const jobNumber of otherJobNumbers) {
-          const jobAudioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber, userId);
-          
-          if (jobAudioFiles && jobAudioFiles.length > 0) {
-            hasAnyAudio = true;
-            
-            // Create a job group
-            const jobGroup = document.createElement('div');
-            jobGroup.className = 'job-audio-group';
-            
-            // Job group header
-            const groupHeader = document.createElement('div');
-            groupHeader.className = 'job-audio-group-header';
-            groupHeader.innerHTML = `
-              <span class="job-audio-group-job-number">${jobNumber}</span>
-              <span class="job-audio-group-count">(${jobAudioFiles.length} file${jobAudioFiles.length > 1 ? 's' : ''})</span>
-            `;
-            jobGroup.appendChild(groupHeader);
-            
-            // Job group list
-            const groupList = document.createElement('div');
-            groupList.className = 'job-audio-group-list';
-            
-            jobAudioFiles.forEach((audioFile, index) => {
-              const audioItem = createAudioItem(audioFile, index, jobNumber);
-              groupList.appendChild(audioItem);
-            });
-            
-            jobGroup.appendChild(groupList);
-            jobSpecificAudioList.appendChild(jobGroup);
-          }
-        }
+        // Sort by job number for consistent display
+        const sortedJobNumbers = Array.from(jobSpecificAudioMap.keys()).sort();
         
-        if (jobSpecificAudioList.children.length > 0) {
-          jobSpecificAudioSection.style.display = 'block';
-        } else {
-          jobSpecificAudioSection.style.display = 'none';
-        }
+        sortedJobNumbers.forEach(jobNumber => {
+          const jobAudioFiles = jobSpecificAudioMap.get(jobNumber);
+          
+          // Create a job group
+          const jobGroup = document.createElement('div');
+          jobGroup.className = 'job-audio-group';
+          
+          // Job group header
+          const groupHeader = document.createElement('div');
+          groupHeader.className = 'job-audio-group-header';
+          groupHeader.innerHTML = `
+            <span class="job-audio-group-job-number">${jobNumber}</span>
+            <span class="job-audio-group-count">(${jobAudioFiles.length} file${jobAudioFiles.length > 1 ? 's' : ''})</span>
+          `;
+          jobGroup.appendChild(groupHeader);
+          
+          // Job group list
+          const groupList = document.createElement('div');
+          groupList.className = 'job-audio-group-list';
+          
+          jobAudioFiles.forEach((audioFile, index) => {
+            const audioItem = createAudioItem(audioFile, index, jobNumber);
+            groupList.appendChild(audioItem);
+          });
+          
+          jobGroup.appendChild(groupList);
+          jobSpecificAudioList.appendChild(jobGroup);
+        });
+        
+        jobSpecificAudioSection.style.display = 'block';
       } else {
         jobSpecificAudioSection.style.display = 'none';
       }
       
-      // Show/hide main section
-      if (hasAnyAudio) {
-        existingAudioSection.style.display = 'block';
-      } else {
-        existingAudioSection.style.display = 'none';
-      }
+      // Show main section
+      existingAudioSection.style.display = 'block';
       
     } catch (error) {
       console.error('Error fetching existing audio files:', error);
@@ -559,20 +609,25 @@ if (!isLoginPage) {
   }
   
   // Helper function to create an audio item
-  function createAudioItem(audioFile, index, jobNumber) {
+  function createAudioItem(audioFile, index, jobNumber, commonJobNumbers = null) {
     const audioItem = document.createElement('div');
     audioItem.className = 'existing-audio-item';
     
-    // Show job number badge if provided
-    const jobBadge = jobNumber 
-      ? `<span class="audio-item-job-badge">${jobNumber}</span>` 
-      : '';
+    // For common audio, show all job numbers it applies to
+    let jobBadgeHtml = '';
+    if (commonJobNumbers && commonJobNumbers.length > 0) {
+      const jobsList = commonJobNumbers.join(', ');
+      jobBadgeHtml = `<span class="audio-item-common-badge" title="Present in: ${jobsList}">All Jobs (${commonJobNumbers.length})</span>`;
+    } else if (jobNumber) {
+      // For job-specific audio, show the specific job number
+      jobBadgeHtml = `<span class="audio-item-job-badge">${jobNumber}</span>`;
+    }
     
     audioItem.innerHTML = `
       <div class="audio-item-header">
         <div class="audio-item-info">
           <span class="audio-item-number">#${index + 1}</span>
-          ${jobBadge}
+          ${jobBadgeHtml}
           <span class="audio-item-dept">${audioFile.toDepartment}</span>
           <span class="audio-item-date">${new Date(audioFile.createdAt).toLocaleString()}</span>
           ${audioFile.summary ? `<span class="audio-item-summary-indicator" title="${audioFile.summary}">📝</span>` : ''}
@@ -666,6 +721,7 @@ if (!isLoginPage) {
   let audioChunks = [];
   let audioBlob = null;
   let audioUrl = null;
+  let currentAudioId = null; // Unique ID for the current audio recording
   let recordingTimer = null;
   let recordingStartTime = null;
   let maxRecordingTime = 120000; // 2 minutes in milliseconds
@@ -827,6 +883,10 @@ if (!isLoginPage) {
 
         mediaRecorder.onstop = async () => {
           const originalBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+          
+          // Generate unique audioId for this recording
+          currentAudioId = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          console.log('🎵 [FRONTEND] Generated audioId:', currentAudioId);
           
           // Show compressing message
           recordingStatus.textContent = 'Compressing audio...';
@@ -1019,6 +1079,7 @@ if (!isLoginPage) {
       audioBlob = null;
       audioChunks = [];
       audioSummary = null; // Clear summary
+      currentAudioId = null; // Clear audio ID
       
       // Reset UI
       audioPlayback.style.display = 'none';
@@ -1099,9 +1160,11 @@ if (!isLoginPage) {
 
           console.log(`💾 [FRONTEND] Saving audio for ${selectedJobNumbers.length} job(s):`, selectedJobNumbers);
 
-          // Save audio for each selected job
+          // Save audio for each selected job (use same audioId for all)
           let successCount = 0;
           let errorCount = 0;
+          
+          console.log(`💾 [FRONTEND] Using audioId for all jobs: ${currentAudioId}`);
           
           for (const jobNumber of selectedJobNumbers) {
             try {
@@ -1112,7 +1175,8 @@ if (!isLoginPage) {
                 audioMimeType: audioBlob.type,
                 createdBy: username,
                 userId: userId,
-                summary: audioSummary || ''
+                summary: audioSummary || '',
+                audioId: currentAudioId // Same audioId for all selected jobs
               };
 
               await voiceNoteToolAPI.saveAudio(audioData);
@@ -1151,6 +1215,7 @@ if (!isLoginPage) {
           audioBlob = null;
           audioChunks = [];
           audioSummary = null; // Clear summary
+          currentAudioId = null; // Clear audio ID
           audioPlayback.style.display = 'none';
           recordBtn.style.display = 'inline-flex';
           
