@@ -190,6 +190,7 @@ if (!isLoginPage) {
   const jobNumberDropdown = document.getElementById('jobNumberDropdown');
   let searchTimeout = null;
   let currentJobNumber = null;
+  let currentJobNumbers = []; // Store all job numbers from batch query
 
   // Handle job number input - search when 4+ digits entered
   jobNumberInput.addEventListener('input', async (e) => {
