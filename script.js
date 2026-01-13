@@ -267,13 +267,39 @@ if (!isLoginPage) {
       // Set current job number
       currentJobNumber = jobNumber;
       
-      const jobDetails = await jobsAPI.getJobDetails(jobNumber);
+      const response = await jobsAPI.getJobDetails(jobNumber);
+      console.log('📦 [FRONTEND] Received job details:', response);
       
-      // Populate job details section
-      document.getElementById('clientName').value = jobDetails.clientName || '';
-      document.getElementById('jobName').value = jobDetails.jobName || '';
-      document.getElementById('orderQuantity').value = jobDetails.orderQuantity || 0;
-      document.getElementById('poDate').value = jobDetails.poDate || '-';
+      // Response now contains { jobs: [...], count: N }
+      const jobs = response.jobs || [];
+      
+      if (jobs.length === 0) {
+        throw new Error('No job details found');
+      }
+      
+      // Show/hide selection controls based on job count
+      const jobSelectionControls = document.getElementById('jobSelectionControls');
+      const showCheckboxes = jobs.length > 1;
+      
+      if (showCheckboxes) {
+        jobSelectionControls.style.display = 'flex';
+      } else {
+        jobSelectionControls.style.display = 'none';
+      }
+      
+      // Populate the jobs list with collapsible cards
+      const jobsList = document.getElementById('jobsList');
+      jobsList.innerHTML = '';
+      
+      jobs.forEach((job, index) => {
+        const jobCard = createJobCard(job, index, showCheckboxes);
+        jobsList.appendChild(jobCard);
+      });
+      
+      // Setup select all / unselect all buttons
+      if (showCheckboxes) {
+        setupSelectionControls();
+      }
       
       // Show job details section
       document.getElementById('jobDetailsSection').style.display = 'block';
@@ -284,16 +310,155 @@ if (!isLoginPage) {
       
     } catch (error) {
       console.error('Error fetching job details:', error);
-      // Fallback to default values if error
-      document.getElementById('clientName').value = '';
-      document.getElementById('jobName').value = '';
-      document.getElementById('orderQuantity').value = 0;
-      document.getElementById('poDate').value = '';
       
       jobSearchError.textContent = error.message || 'Failed to fetch job details.';
       jobSearchError.className = 'inline-warning';
       jobSearchError.style.display = 'block';
     }
+  }
+  
+  // Function to create a collapsible job card
+  function createJobCard(job, index, showCheckbox) {
+    const card = document.createElement('div');
+    card.className = 'job-card';
+    card.dataset.jobNumber = job.jobNumber || '';
+    if (index === 0) {
+      card.classList.add('expanded'); // First card expanded by default
+    }
+    
+    // Card Header
+    const header = document.createElement('div');
+    header.className = 'job-card-header';
+    
+    // Create checkbox HTML if needed
+    const checkboxHtml = showCheckbox 
+      ? `<input type="checkbox" class="job-card-checkbox" checked data-job-number="${job.jobNumber || ''}">`
+      : '';
+    
+    header.innerHTML = `
+      <div class="job-card-header-left">
+        ${checkboxHtml}
+        <div class="job-card-title">
+          <span class="job-card-job-number">${job.jobNumber || 'N/A'}</span>
+          <span>${job.jobTitle || 'No Title'}</span>
+        </div>
+      </div>
+      <svg class="job-card-toggle" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+      </svg>
+    `;
+    
+    // Card Body (collapsible)
+    const body = document.createElement('div');
+    body.className = 'job-card-body';
+    body.innerHTML = `
+      <div class="job-card-details-grid">
+        <div class="job-card-field">
+          <span class="job-card-field-label">Client Name</span>
+          <span class="job-card-field-value">${job.clientName || 'N/A'}</span>
+        </div>
+        <div class="job-card-field">
+          <span class="job-card-field-label">Job Number</span>
+          <span class="job-card-field-value">${job.jobNumber || 'N/A'}</span>
+        </div>
+        <div class="job-card-field">
+          <span class="job-card-field-label">Job Title</span>
+          <span class="job-card-field-value">${job.jobTitle || 'N/A'}</span>
+        </div>
+        <div class="job-card-field">
+          <span class="job-card-field-label">Order Quantity</span>
+          <span class="job-card-field-value">${job.orderQuantity?.toLocaleString() || 0}</span>
+        </div>
+        <div class="job-card-field">
+          <span class="job-card-field-label">Product Category</span>
+          <span class="job-card-field-value">${job.productCategory || 'N/A'}</span>
+        </div>
+        <div class="job-card-field">
+          <span class="job-card-field-label">Unit Price</span>
+          <span class="job-card-field-value">₹${job.unitPrice || 0}</span>
+        </div>
+        <div class="job-card-field">
+          <span class="job-card-field-label">Job Created On</span>
+          <span class="job-card-field-value">${job.jobCreatedOn || 'N/A'}</span>
+        </div>
+      </div>
+    `;
+    
+    // Toggle expand/collapse on header left section click (not on checkbox)
+    const headerLeft = header.querySelector('.job-card-header-left');
+    const toggle = header.querySelector('.job-card-toggle');
+    
+    if (showCheckbox) {
+      // Prevent checkbox clicks from toggling the card
+      const checkbox = header.querySelector('.job-card-checkbox');
+      checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+      
+      // Only toggle when clicking the title area (not checkbox)
+      headerLeft.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('job-card-checkbox')) {
+          card.classList.toggle('expanded');
+        }
+      });
+    } else {
+      // If no checkbox, entire header left can toggle
+      headerLeft.addEventListener('click', () => {
+        card.classList.toggle('expanded');
+      });
+    }
+    
+    // Toggle icon click
+    toggle.addEventListener('click', () => {
+      card.classList.toggle('expanded');
+    });
+    
+    card.appendChild(header);
+    card.appendChild(body);
+    
+    return card;
+  }
+  
+  // Setup select all / unselect all controls
+  function setupSelectionControls() {
+    const selectAllBtn = document.getElementById('selectAllJobsBtn');
+    const unselectAllBtn = document.getElementById('unselectAllJobsBtn');
+    
+    // Remove existing listeners (if any)
+    const newSelectAllBtn = selectAllBtn.cloneNode(true);
+    const newUnselectAllBtn = unselectAllBtn.cloneNode(true);
+    selectAllBtn.replaceWith(newSelectAllBtn);
+    unselectAllBtn.replaceWith(newUnselectAllBtn);
+    
+    // Select all
+    newSelectAllBtn.addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll('.job-card-checkbox');
+      checkboxes.forEach(cb => cb.checked = true);
+    });
+    
+    // Unselect all
+    newUnselectAllBtn.addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll('.job-card-checkbox');
+      checkboxes.forEach(cb => cb.checked = false);
+    });
+  }
+  
+  // Get selected job numbers
+  function getSelectedJobNumbers() {
+    const checkboxes = document.querySelectorAll('.job-card-checkbox');
+    if (checkboxes.length === 0) {
+      // No checkboxes means single job, get from dataset
+      const jobCard = document.querySelector('.job-card');
+      return jobCard ? [jobCard.dataset.jobNumber] : [];
+    }
+    
+    const selectedJobs = [];
+    checkboxes.forEach(cb => {
+      if (cb.checked) {
+        selectedJobs.push(cb.dataset.jobNumber);
+      }
+    });
+    return selectedJobs;
   }
 
   // Function to fetch existing audio files
@@ -818,11 +983,11 @@ if (!isLoginPage) {
 
           const username = localStorage.getItem('username');
           const userId = localStorage.getItem('userId');
-          const jobNumber = currentJobNumber;
           const toDepartment = document.getElementById('toDepartment').value;
+          const selectedJobNumbers = getSelectedJobNumbers();
 
-          if (!jobNumber) {
-            jobSearchError.textContent = 'Please select a job number first.';
+          if (selectedJobNumbers.length === 0) {
+            jobSearchError.textContent = 'Please select at least one job.';
             jobSearchError.className = 'inline-warning';
             jobSearchError.style.display = 'block';
             saveAudioBtn.disabled = false;
@@ -848,22 +1013,51 @@ if (!isLoginPage) {
             return;
           }
 
-          const audioData = {
-            jobNumber,
-            toDepartment,
-            audioBlob: base64Audio,
-            audioMimeType: audioBlob.type,
-            createdBy: username, // Store username for display
-            userId: userId, // Store userId for filtering
-            summary: audioSummary || '' // Include summary if available
-          };
+          console.log(`💾 [FRONTEND] Saving audio for ${selectedJobNumbers.length} job(s):`, selectedJobNumbers);
 
-          await voiceNoteToolAPI.saveAudio(audioData);
+          // Save audio for each selected job
+          let successCount = 0;
+          let errorCount = 0;
+          
+          for (const jobNumber of selectedJobNumbers) {
+            try {
+              const audioData = {
+                jobNumber,
+                toDepartment,
+                audioBlob: base64Audio,
+                audioMimeType: audioBlob.type,
+                createdBy: username,
+                userId: userId,
+                summary: audioSummary || ''
+              };
+
+              await voiceNoteToolAPI.saveAudio(audioData);
+              successCount++;
+              console.log(`✅ [FRONTEND] Saved audio for job: ${jobNumber}`);
+            } catch (error) {
+              console.error(`❌ [FRONTEND] Failed to save audio for job ${jobNumber}:`, error);
+              errorCount++;
+            }
+          }
 
           // Show success message
-          jobSearchError.textContent = 'Audio saved successfully!';
-          jobSearchError.className = 'inline-success';
-          jobSearchError.style.display = 'block';
+          if (successCount > 0) {
+            const message = successCount === 1 
+              ? 'Audio saved successfully!' 
+              : `Audio saved successfully for ${successCount} job(s)!`;
+            jobSearchError.textContent = errorCount > 0 
+              ? `${message} (${errorCount} failed)` 
+              : message;
+            jobSearchError.className = 'inline-success';
+            jobSearchError.style.display = 'block';
+          } else {
+            jobSearchError.textContent = 'Failed to save audio for all jobs.';
+            jobSearchError.className = 'inline-warning';
+            jobSearchError.style.display = 'block';
+            saveAudioBtn.disabled = false;
+            saveAudioBtn.innerHTML = '<span class="btn-icon">💾</span><span>Save</span>';
+            return;
+          }
 
           // Clear audio and reset UI
           if (audioUrl) {

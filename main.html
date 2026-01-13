@@ -77,24 +77,9 @@
           <header class="panel-header">
             <h3>Job Details</h3>
           </header>
-          <div class="panel-body job-details-grid">
-            <div class="field">
-              <label for="clientName">Client Name</label>
-              <input id="clientName" name="clientName" type="text" readonly />
-            </div>
-            <div class="field">
-              <label for="jobName">Job Name</label>
-              <input id="jobName" name="jobName" type="text" readonly />
-            </div>
-            <div class="field">
-              <label for="orderQuantity">Order Quantity</label>
-              <input id="orderQuantity" name="orderQuantity" type="number" readonly />
-            </div>
-            <div class="field">
-              <label for="poDate">PO Date</label>
-              <input id="poDate" name="poDate" type="text" readonly />
-            </div>
-            <div class="field">
+          <div class="panel-body">
+            <!-- Department Field (Single/Common for all jobs) -->
+            <div class="field" style="margin-bottom: 1rem;">
               <label for="toDepartment">To Department</label>
               <select id="toDepartment" name="toDepartment" required>
                 <option value="">Select Department</option>
@@ -105,6 +90,17 @@
                 <option value="packing and dispatch">Packing and Dispatch</option>
                 <option value="other">Other</option>
               </select>
+            </div>
+
+            <!-- Select All / Unselect All Controls (for multiple jobs) -->
+            <div id="jobSelectionControls" class="job-selection-controls" style="display: none;">
+              <button type="button" id="selectAllJobsBtn" class="btn-secondary">Select All</button>
+              <button type="button" id="unselectAllJobsBtn" class="btn-secondary">Unselect All</button>
+            </div>
+
+            <!-- Jobs List Container -->
+            <div id="jobsList" class="jobs-list">
+              <!-- Job cards will be dynamically inserted here -->
             </div>
           </div>
         </section>

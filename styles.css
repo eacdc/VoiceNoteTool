@@ -497,6 +497,162 @@ body {
   gap: 10px 14px;
 }
 
+/* Job Selection Controls */
+.job-selection-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  background: var(--bg-elevated-soft);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Jobs List */
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Job Card */
+.job-card {
+  background: var(--bg-elevated-soft);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.job-card:hover {
+  border-color: var(--accent);
+}
+
+/* Job Card Header (Clickable) */
+.job-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(79, 70, 229, 0.05);
+  transition: background var(--transition-fast);
+  gap: 12px;
+}
+
+.job-card-header:hover {
+  background: rgba(79, 70, 229, 0.12);
+}
+
+/* Left section with checkbox and title */
+.job-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Checkbox styling */
+.job-card-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.job-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.job-card-job-number {
+  color: var(--accent);
+  font-family: "SF Mono", Monaco, monospace;
+}
+
+.job-card-toggle {
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.job-card.expanded .job-card-toggle {
+  transform: rotate(180deg);
+}
+
+/* Job Card Body (Collapsible) */
+.job-card-body {
+  display: none;
+  padding: 0 16px 16px 16px;
+  border-top: 1px solid var(--border-subtle);
+  animation: slideDown 0.2s ease-out;
+}
+
+.job-card.expanded .job-card-body {
+  display: block;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Job Details Grid inside Card */
+.job-card-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.job-card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.job-card-field-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.job-card-field-value {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
 .inline-warning {
   margin-top: 8px;
   font-size: 0.8rem;
