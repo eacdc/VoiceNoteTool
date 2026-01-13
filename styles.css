@@ -933,6 +933,50 @@ body {
   gap: 12px;
 }
 
+/* Audio Subsection Titles */
+.audio-subsection-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Job Audio Group (for job-specific section) */
+.job-audio-group {
+  margin-bottom: 20px;
+}
+
+.job-audio-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(79, 70, 229, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+}
+
+.job-audio-group-job-number {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-family: "SF Mono", Monaco, monospace;
+}
+
+.job-audio-group-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.job-audio-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .existing-audio-item {
   padding: 12px 14px;
   border-radius: 10px;
@@ -960,6 +1004,33 @@ body {
   gap: 12px;
   flex-wrap: wrap;
   flex: 1;
+}
+
+.audio-item-job-badge {
+  padding: 4px 8px;
+  background: rgba(79, 70, 229, 0.2);
+  color: var(--accent);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: "SF Mono", Monaco, monospace;
+}
+
+.audio-item-summary {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(79, 70, 229, 0.1);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.audio-item-summary-indicator {
+  cursor: help;
+  font-size: 1rem;
 }
 
 .audio-item-number {

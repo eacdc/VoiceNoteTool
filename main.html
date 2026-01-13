@@ -111,8 +111,20 @@
             <h3>Existing Audio Files</h3>
           </header>
           <div class="panel-body">
-            <div id="existingAudioList" class="existing-audio-list">
-              <!-- Existing audio files will be displayed here -->
+            <!-- Common Audio Files (for all jobs) -->
+            <div id="commonAudioSection" style="display: none; margin-bottom: 24px;">
+              <h4 class="audio-subsection-title">Common Audio Files (All Jobs)</h4>
+              <div id="commonAudioList" class="existing-audio-list">
+                <!-- Common audio files will be displayed here -->
+              </div>
+            </div>
+
+            <!-- Job-Specific Audio Files -->
+            <div id="jobSpecificAudioSection" style="display: none;">
+              <h4 class="audio-subsection-title">Job-Specific Audio Files</h4>
+              <div id="jobSpecificAudioList">
+                <!-- Job-specific audio files grouped by job number will be displayed here -->
+              </div>
             </div>
           </div>
         </section>

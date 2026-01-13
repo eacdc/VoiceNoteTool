@@ -277,6 +277,10 @@ if (!isLoginPage) {
         throw new Error('No job details found');
       }
       
+      // Store all job numbers for audio fetching
+      currentJobNumbers = jobs.map(job => job.jobNumber).filter(Boolean);
+      console.log('📦 [FRONTEND] All job numbers:', currentJobNumbers);
+      
       // Show/hide selection controls based on job count
       const jobSelectionControls = document.getElementById('jobSelectionControls');
       const showCheckboxes = jobs.length > 1;
@@ -305,7 +309,7 @@ if (!isLoginPage) {
       document.getElementById('jobDetailsSection').style.display = 'block';
       document.getElementById('voiceNoteSection').style.display = 'block';
       
-      // Fetch existing audio files for this job
+      // Fetch existing audio files for all jobs
       await fetchExistingAudioFiles(jobNumber);
       
     } catch (error) {
@@ -461,55 +465,134 @@ if (!isLoginPage) {
     return selectedJobs;
   }
 
-  // Function to fetch existing audio files
-  async function fetchExistingAudioFiles(jobNumber) {
+  // Function to fetch existing audio files for all jobs
+  async function fetchExistingAudioFiles(mainJobNumber) {
     try {
       const userId = localStorage.getItem('userId');
-      const audioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber, userId);
-      const existingAudioList = document.getElementById('existingAudioList');
       const existingAudioSection = document.getElementById('existingAudioSection');
+      const commonAudioSection = document.getElementById('commonAudioSection');
+      const commonAudioList = document.getElementById('commonAudioList');
+      const jobSpecificAudioSection = document.getElementById('jobSpecificAudioSection');
+      const jobSpecificAudioList = document.getElementById('jobSpecificAudioList');
       
-      if (audioFiles && audioFiles.length > 0) {
-        existingAudioList.innerHTML = '';
+      let hasAnyAudio = false;
+      
+      // 1. Fetch common audio (for the main searched job)
+      console.log('🎵 [FRONTEND] Fetching common audio for main job:', mainJobNumber);
+      const commonAudioFiles = await voiceNoteToolAPI.getAudioByJobNumber(mainJobNumber, userId);
+      
+      if (commonAudioFiles && commonAudioFiles.length > 0) {
+        hasAnyAudio = true;
+        commonAudioList.innerHTML = '';
         
-        audioFiles.forEach((audioFile, index) => {
-          const audioItem = document.createElement('div');
-          audioItem.className = 'existing-audio-item';
-          audioItem.innerHTML = `
-            <div class="audio-item-header">
-              <div class="audio-item-info">
-                <span class="audio-item-number">#${index + 1}</span>
-                <span class="audio-item-dept">${audioFile.toDepartment}</span>
-                <span class="audio-item-date">${new Date(audioFile.createdAt).toLocaleString()}</span>
-              </div>
-              <button class="audio-item-play-btn" data-audio-id="${audioFile._id}">
-                <span class="btn-icon">▶️</span>
-                <span>Play</span>
-              </button>
-            </div>
-            <audio class="existing-audio-player" id="existingAudio_${audioFile._id}" style="display: none; width: 100%; margin-top: 10px;"></audio>
-          `;
-          existingAudioList.appendChild(audioItem);
+        commonAudioFiles.forEach((audioFile, index) => {
+          const audioItem = createAudioItem(audioFile, index, null);
+          commonAudioList.appendChild(audioItem);
         });
         
-        existingAudioSection.style.display = 'block';
-        
-        // Add event listeners for play buttons
-        existingAudioList.querySelectorAll('.audio-item-play-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const audioId = btn.getAttribute('data-audio-id');
-            await playExistingAudio(audioId, btn);
-          });
-        });
+        commonAudioSection.style.display = 'block';
       } else {
-        existingAudioList.innerHTML = '<p class="no-audio-message">No audio files found for this job.</p>';
-        existingAudioSection.style.display = 'block';
+        commonAudioSection.style.display = 'none';
       }
+      
+      // 2. Fetch job-specific audio (for all other jobs)
+      const otherJobNumbers = currentJobNumbers.filter(jn => jn !== mainJobNumber);
+      console.log('🎵 [FRONTEND] Fetching job-specific audio for jobs:', otherJobNumbers);
+      
+      if (otherJobNumbers.length > 0) {
+        jobSpecificAudioList.innerHTML = '';
+        
+        for (const jobNumber of otherJobNumbers) {
+          const jobAudioFiles = await voiceNoteToolAPI.getAudioByJobNumber(jobNumber, userId);
+          
+          if (jobAudioFiles && jobAudioFiles.length > 0) {
+            hasAnyAudio = true;
+            
+            // Create a job group
+            const jobGroup = document.createElement('div');
+            jobGroup.className = 'job-audio-group';
+            
+            // Job group header
+            const groupHeader = document.createElement('div');
+            groupHeader.className = 'job-audio-group-header';
+            groupHeader.innerHTML = `
+              <span class="job-audio-group-job-number">${jobNumber}</span>
+              <span class="job-audio-group-count">(${jobAudioFiles.length} file${jobAudioFiles.length > 1 ? 's' : ''})</span>
+            `;
+            jobGroup.appendChild(groupHeader);
+            
+            // Job group list
+            const groupList = document.createElement('div');
+            groupList.className = 'job-audio-group-list';
+            
+            jobAudioFiles.forEach((audioFile, index) => {
+              const audioItem = createAudioItem(audioFile, index, jobNumber);
+              groupList.appendChild(audioItem);
+            });
+            
+            jobGroup.appendChild(groupList);
+            jobSpecificAudioList.appendChild(jobGroup);
+          }
+        }
+        
+        if (jobSpecificAudioList.children.length > 0) {
+          jobSpecificAudioSection.style.display = 'block';
+        } else {
+          jobSpecificAudioSection.style.display = 'none';
+        }
+      } else {
+        jobSpecificAudioSection.style.display = 'none';
+      }
+      
+      // Show/hide main section
+      if (hasAnyAudio) {
+        existingAudioSection.style.display = 'block';
+      } else {
+        existingAudioSection.style.display = 'none';
+      }
+      
     } catch (error) {
       console.error('Error fetching existing audio files:', error);
-      // Don't show error, just hide the section
       document.getElementById('existingAudioSection').style.display = 'none';
     }
+  }
+  
+  // Helper function to create an audio item
+  function createAudioItem(audioFile, index, jobNumber) {
+    const audioItem = document.createElement('div');
+    audioItem.className = 'existing-audio-item';
+    
+    // Show job number badge if provided
+    const jobBadge = jobNumber 
+      ? `<span class="audio-item-job-badge">${jobNumber}</span>` 
+      : '';
+    
+    audioItem.innerHTML = `
+      <div class="audio-item-header">
+        <div class="audio-item-info">
+          <span class="audio-item-number">#${index + 1}</span>
+          ${jobBadge}
+          <span class="audio-item-dept">${audioFile.toDepartment}</span>
+          <span class="audio-item-date">${new Date(audioFile.createdAt).toLocaleString()}</span>
+          ${audioFile.summary ? `<span class="audio-item-summary-indicator" title="${audioFile.summary}">📝</span>` : ''}
+        </div>
+        <button class="audio-item-play-btn" data-audio-id="${audioFile._id}">
+          <span class="btn-icon">▶️</span>
+          <span>Play</span>
+        </button>
+      </div>
+      ${audioFile.summary ? `<div class="audio-item-summary">${audioFile.summary}</div>` : ''}
+      <audio class="existing-audio-player" id="existingAudio_${audioFile._id}" style="display: none; width: 100%; margin-top: 10px;"></audio>
+    `;
+    
+    // Add play button event listener
+    const playBtn = audioItem.querySelector('.audio-item-play-btn');
+    playBtn.addEventListener('click', async () => {
+      const audioId = playBtn.getAttribute('data-audio-id');
+      await playExistingAudio(audioId, playBtn);
+    });
+    
+    return audioItem;
   }
 
   // Function to play existing audio
