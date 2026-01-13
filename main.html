@@ -106,11 +106,14 @@
         </section>
 
         <!-- Section 2: Existing Audio Files -->
-        <section class="panel panel--collapsible" id="existingAudioSection" style="display: none;">
-          <header class="panel-header">
-            <h3>Existing Audio Files</h3>
+        <section class="panel panel--collapsible collapsed" id="existingAudioSection" style="display: none;">
+          <header class="panel-header" id="existingAudioHeader" style="cursor: pointer;">
+            <h3>
+              <span class="toggle-icon">▶</span>
+              Existing Audio Files
+            </h3>
           </header>
-          <div class="panel-body">
+          <div class="panel-body" id="existingAudioBody">
             <!-- Common Audio Files (for all jobs) -->
             <div id="commonAudioSection" style="display: none; margin-bottom: 24px;">
               <h4 class="audio-subsection-title">Common Audio Files (All Jobs)</h4>

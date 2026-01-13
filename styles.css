@@ -463,13 +463,47 @@ body {
   justify-content: space-between;
   cursor: pointer;
   user-select: none;
+  transition: background-color 0.3s ease;
 }
 
-.panel--collapsible .panel-header::after {
-  content: "▾";
-  font-size: 0.85rem;
-  color: rgba(148, 163, 184, 0.9);
+.panel--collapsible .panel-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel--collapsible .toggle-icon {
+  font-size: 0.75rem;
   transition: transform var(--transition-fast);
+  display: inline-block;
+}
+
+.panel--collapsible.collapsed .toggle-icon {
+  transform: rotate(0deg);
+}
+
+.panel--collapsible:not(.collapsed) .toggle-icon {
+  transform: rotate(90deg);
+}
+
+.panel--collapsible.collapsed .panel-body {
+  display: none;
+}
+
+/* Blinking animation for collapsed section with audio */
+@keyframes blink-section {
+  0%, 100% {
+    background-color: var(--bg-elevated);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    background-color: rgba(79, 70, 229, 0.15);
+    box-shadow: 0 4px 24px rgba(79, 70, 229, 0.4);
+  }
+}
+
+.panel--collapsible.blink-attention {
+  animation: blink-section 1.5s ease-in-out 3;
 }
 
 .panel-collapsed .panel-header::after {

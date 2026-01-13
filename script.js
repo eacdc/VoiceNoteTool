@@ -175,13 +175,16 @@ if (!isLoginPage) {
     });
   }
 
-  // Collapsible panels
+  // Collapsible panels (general)
   document.querySelectorAll(".panel--collapsible .panel-header").forEach((header) => {
     header.addEventListener("click", () => {
       const panel = header.closest(".panel--collapsible");
       panel?.classList.toggle("panel-collapsed");
     });
   });
+  
+  // Setup existing audio section toggle
+  setupExistingAudioToggle();
 
   // Job search functionality
   const jobSearchForm = document.getElementById('jobSearchForm');
@@ -599,13 +602,40 @@ if (!isLoginPage) {
         jobSpecificAudioSection.style.display = 'none';
       }
       
-      // Show main section
+      // Show main section (collapsed by default)
       existingAudioSection.style.display = 'block';
+      existingAudioSection.classList.add('collapsed');
+      
+      // Apply blinking animation to draw attention
+      existingAudioSection.classList.add('blink-attention');
+      
+      // Remove blink animation after it completes (3 cycles × 1.5s = 4.5s)
+      setTimeout(() => {
+        existingAudioSection.classList.remove('blink-attention');
+      }, 4500);
       
     } catch (error) {
       console.error('Error fetching existing audio files:', error);
       document.getElementById('existingAudioSection').style.display = 'none';
     }
+  }
+  
+  // Toggle existing audio section collapse/expand
+  function setupExistingAudioToggle() {
+    const header = document.getElementById('existingAudioHeader');
+    const section = document.getElementById('existingAudioSection');
+    const body = document.getElementById('existingAudioBody');
+    
+    if (!header || !section) return;
+    
+    header.addEventListener('click', () => {
+      section.classList.toggle('collapsed');
+      
+      // Stop blinking when user manually expands
+      if (!section.classList.contains('collapsed')) {
+        section.classList.remove('blink-attention');
+      }
+    });
   }
   
   // Helper function to create an audio item
