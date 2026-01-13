@@ -175,16 +175,16 @@ if (!isLoginPage) {
     });
   }
 
-  // Collapsible panels (general)
+  // Collapsible panels (general) - exclude existingAudioSection
   document.querySelectorAll(".panel--collapsible .panel-header").forEach((header) => {
-    header.addEventListener("click", () => {
-      const panel = header.closest(".panel--collapsible");
-      panel?.classList.toggle("panel-collapsed");
-    });
+    const panel = header.closest(".panel--collapsible");
+    // Skip the existing audio section - it has its own handler
+    if (panel && panel.id !== 'existingAudioSection') {
+      header.addEventListener("click", () => {
+        panel?.classList.toggle("panel-collapsed");
+      });
+    }
   });
-  
-  // Setup existing audio section toggle
-  setupExistingAudioToggle();
 
   // Job search functionality
   const jobSearchForm = document.getElementById('jobSearchForm');
@@ -606,6 +606,12 @@ if (!isLoginPage) {
       existingAudioSection.style.display = 'block';
       existingAudioSection.classList.add('collapsed');
       
+      // Setup toggle handler (only once)
+      if (!existingAudioSection.dataset.toggleSetup) {
+        setupExistingAudioToggle();
+        existingAudioSection.dataset.toggleSetup = 'true';
+      }
+      
       // Apply blinking animation to draw attention
       existingAudioSection.classList.add('blink-attention');
       
@@ -624,16 +630,34 @@ if (!isLoginPage) {
   function setupExistingAudioToggle() {
     const header = document.getElementById('existingAudioHeader');
     const section = document.getElementById('existingAudioSection');
-    const body = document.getElementById('existingAudioBody');
     
-    if (!header || !section) return;
+    if (!header || !section) {
+      console.log('❌ [TOGGLE] Header or section not found');
+      return;
+    }
     
-    header.addEventListener('click', () => {
+    console.log('✅ [TOGGLE] Setting up existing audio toggle');
+    
+    // Remove any existing listeners by cloning
+    const newHeader = header.cloneNode(true);
+    header.parentNode.replaceChild(newHeader, header);
+    
+    // Add click listener to the new header
+    newHeader.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent event bubbling
+      
+      const isCurrentlyCollapsed = section.classList.contains('collapsed');
+      
+      console.log(`🔄 [TOGGLE] Toggling section. Currently collapsed: ${isCurrentlyCollapsed}`);
+      
       section.classList.toggle('collapsed');
       
       // Stop blinking when user manually expands
       if (!section.classList.contains('collapsed')) {
+        console.log('📂 [TOGGLE] Section expanded - stopping blink');
         section.classList.remove('blink-attention');
+      } else {
+        console.log('📁 [TOGGLE] Section collapsed');
       }
     });
   }
